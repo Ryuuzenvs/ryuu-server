@@ -120,20 +120,23 @@ public function index(Request $request)
     }
 
     // READ FILE FOR EDITOR (Open Code Editor)
-    public function editFile(Request $request)
-    {
-        $filePath = $request->query('filepath');
-        $disk = $this->getDisk();
+public function editFile(Request $request)
+{
+    $filePath = $request->query('filepath');
+    $disk = $this->getDisk();
 
-        if (!$filePath || !$disk->exists($filePath)) {
-            return redirect()->route('files.index')->with('error', 'File tidak ditemukan!');
-        }
-
-        $content = $disk->get($filePath);
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-
-        return view('file-manager.editor', compact('filePath', 'content', 'extension'));
+    if (!$filePath || !$disk->exists($filePath)) {
+        return redirect()->route('files.index')->with('error', 'File tidak ditemukan!');
     }
+
+    $rawContent = $disk->get($filePath);
+    
+    // ENCODE KE BASE64 AGAR AMAN UNTUK SEMUA JENIS KARAKTER/SCRIPT (JS, PHP, GO, JSON, DLL)
+    $content = base64_encode($rawContent);
+    $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+    return view('file-manager.editor', compact('filePath', 'content', 'extension'));
+}
 
     // UPDATE FILE (Save Content via AJAX)
     public function saveFile(Request $request)

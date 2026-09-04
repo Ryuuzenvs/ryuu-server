@@ -44,22 +44,35 @@
 
     <script>
         let editor;
-        const fileExt = "{{ strtolower($extension) }}";
+        const fileExt = "{{ $extension }}";
         const isOwner = "{{ auth()->user()->role }}" === "owner";
+
+        // Helper untuk Decode Base64 UTF-8 dengan aman
+        function decodeBase64Utf8(str) {
+            try {
+                return decodeURIComponent(escape(window.atob(str)));
+            } catch (e) {
+                return window.atob(str);
+            }
+        }
+
+        // Ambil data Base64 dari backend PHP
+        const base64Code = "{{ $content }}";
+        const decodedContent = decodeBase64Utf8(base64Code);
 
         // Mapping ekstensi file ke mode Monaco Language
         const langMap = {
             'js': 'javascript', 'ts': 'typescript', 'php': 'php',
             'py': 'python', 'html': 'html', 'css': 'css',
             'json': 'json', 'sh': 'shell', 'md': 'markdown',
-            'env': 'ini', 'sql': 'sql', 'xml': 'xml'
+            'env': 'ini', 'sql': 'sql', 'xml': 'xml', 'go': 'go'
         };
 
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' }});
 
         require(['vs/editor/editor.main'], function() {
             editor = monaco.editor.create(document.getElementById('monaco-editor-container'), {
-                value: `{!! addslashes($content) !!}`,
+                value: decodedContent,
                 language: langMap[fileExt] || 'plaintext',
                 theme: 'vs-dark',
                 readOnly: !isOwner,
