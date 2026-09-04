@@ -22,13 +22,17 @@ require __DIR__.'/auth.php';
 
 Route::middleware(['auth'])->group(function () {
     
-    // Read-only Routes (Owner & Guest bisa akses)
+    // READ ROUTES (Bisa diakses Owner & Guest)
     Route::get('/files', [FileManagerController::class, 'index'])->name('files.index');
+    Route::get('/files/editor', [FileManagerController::class, 'editFile'])->name('files.editor');
 
-    // Owner-Only Action Routes (Guest diblokir via middleware 'is_owner')
+    // OWNER ONLY ROUTES (Dikunci Middleware 'is_owner')
     Route::middleware(['is_owner'])->group(function () {
         Route::post('/files/mkdir', [FileManagerController::class, 'createFolder'])->name('files.mkdir');
+        Route::post('/files/touch', [FileManagerController::class, 'createFile'])->name('files.touch');
+        Route::post('/files/rename', [FileManagerController::class, 'renameItem'])->name('files.rename');
         Route::post('/files/delete', [FileManagerController::class, 'deleteItem'])->name('files.delete');
+        Route::post('/files/save', [FileManagerController::class, 'saveFile'])->name('files.save');
     });
 
 });
