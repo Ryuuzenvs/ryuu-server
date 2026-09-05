@@ -18,29 +18,34 @@ public function index(Request $request)
     $relativeDirectory = str_replace('..', '', $relativeDirectory);
     $relativeDirectory = trim($relativeDirectory, '/');
 
-    // Dapatkan absolute path di OS Linux
     $basePath = config('filesystems.disks.server_root.root', '/var/www/html');
     $fullPath = $relativeDirectory ? $basePath . '/' . $relativeDirectory : $basePath;
 
     $folders = [];
     $files = [];
 
-    // Gunakan Native PHP scanning yang kebal Symlink & super cepat
     if (is_dir($fullPath)) {
         $scanItems = @scandir($fullPath);
 
         if ($scanItems !== false) {
             foreach ($scanItems as $item) {
-                // Ignore dot files
                 if ($item === '.' || $item === '..') continue;
 
                 $itemFullPath = $fullPath . '/' . $item;
                 $itemRelativePath = $relativeDirectory ? $relativeDirectory . '/' . $item : $item;
 
                 if (@is_dir($itemFullPath)) {
+                    // CEK APAKAH ADA FILE INDEX UTAMA UNTUK WEB APP
+                    $hasWebApp = file_exists($itemFullPath . '/index.php') || file_exists($itemFullPath . '/index.html');
+                    
+                    // Bikin URL web app jika diakses via Apache (misal: http://localhost/nama-folder)
+                    $webAppUrl = '/' . $itemRelativePath;
+
                     $folders[] = [
                         'name' => $item,
                         'path' => $itemRelativePath,
+                        'has_web_app' => $hasWebApp,
+                        'web_app_url' => $webAppUrl,
                     ];
                 } else {
                     $files[] = [
@@ -48,7 +53,7 @@ public function index(Request $request)
                         'path' => $itemRelativePath,
                         'size' => round(@filesize($itemFullPath) / 1024, 2),
                         'last_modified' => date('Y-m-d H:i:s', @filemtime($itemFullPath) ?: time()),
-                        'ext' => pathinfo($item, PATHINFO_EXTENSION),
+                        'ext' => strtolower(pathinfo($item, PATHINFO_EXTENSION)),
                     ];
                 }
             }
@@ -57,6 +62,7 @@ public function index(Request $request)
 
     return view('file-manager.index', compact('folders', 'files', 'relativeDirectory'));
 }
+
     // CREATE FILE (Touch)
     public function createFile(Request $request)
     {
